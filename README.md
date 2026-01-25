@@ -28,19 +28,28 @@ Open http://localhost:3000 and click "Load data".
 
 ## Run with Docker
 
+Create a shared network:
+```bash
+docker network create ch1-net
+```
+
 Backend:
 ```bash
 docker build -t ch1-backend ./backend
-docker run --rm -p 8080:8080 -e PORT=8080 ch1-backend
+docker run --rm --name ch1-backend --network ch1-net -p 8080:8080 -e PORT=8080 ch1-backend
 ```
 
 Frontend (nginx):
 ```bash
 docker build -t ch1-frontend ./frontend
-docker run --rm -p 3000:80 -e API_BASE_URL=http://ch1-backend:8080 ch1-frontend
+docker run --rm --name ch1-frontend --network ch1-net -p 3000:80 -e API_BASE_URL= ch1-frontend
 ```
 
 Open http://localhost:3000 and click "Load data".
+
+Notes:
+- The nginx frontend proxies `/api/*` to `http://ch1-backend:8080` on the Docker network.
+- For local (non-Docker) frontend, edit `frontend/config.js` to point at your backend.
 
 ## Test the API with curl
 ```bash
