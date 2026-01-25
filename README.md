@@ -58,6 +58,17 @@ docker compose up --build
 
 Open http://localhost:3000 and click "Load data".
 
+## .env configuration (optional)
+Copy `.env.example` to `.env` and adjust as needed:
+```bash
+cp .env.example .env
+```
+
+Values:
+- `BACKEND_PORT` (default `8080`)
+- `FRONTEND_PORT` (default `3000`)
+- `API_BASE_URL` (empty uses nginx proxy; set full URL to override)
+
 ## Test the API with curl
 ```bash
 curl http://localhost:8080/
