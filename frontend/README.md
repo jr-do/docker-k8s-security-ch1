@@ -13,7 +13,7 @@ If your backend runs on a different host or port, update `API_BASE_URL` in `inde
 ## Run with Docker (nginx)
 ```bash
 docker build -t ch1-frontend .
-docker run --rm -p 3000:80 ch1-frontend
+docker run --rm -p 3000:80 -e API_BASE_URL=http://ch1-backend:8080 ch1-frontend
 ```
 
 Open http://localhost:3000 and click "Load data".
