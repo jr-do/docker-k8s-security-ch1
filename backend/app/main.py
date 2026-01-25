@@ -1,0 +1,39 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Any
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI(title="fastapi-backend")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/")
+def root() -> dict[str, str]:
+    return {"name": "fastapi-backend"}
+
+
+@app.get("/healthz")
+def healthz() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.get("/api/info")
+def api_info() -> dict[str, Any]:
+    timestamp = datetime.now(timezone.utc).isoformat()
+    return {
+        "service": "backend",
+        "version": "1.0.0",
+        "timestamp": timestamp,
+        "message": "Hello from the API",
+        "items": ["docker", "kubernetes", "security"],
+    }
