@@ -5,12 +5,11 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-COPY pyproject.toml /app/
+COPY pyproject.toml README.md /app/
+COPY app /app/app
 
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir .
-
-COPY app /app/app
 
 ENV PORT=8080
 EXPOSE 8080
