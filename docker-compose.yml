@@ -1,0 +1,26 @@
+services:
+  backend:
+    build: ./backend
+    container_name: ch1-backend
+    environment:
+      PORT: "8080"
+    ports:
+      - "8080:8080"
+    networks:
+      - ch1-net
+
+  frontend:
+    build: ./frontend
+    container_name: ch1-frontend
+    environment:
+      API_BASE_URL: ""
+    ports:
+      - "3000:80"
+    networks:
+      - ch1-net
+    depends_on:
+      - backend
+
+networks:
+  ch1-net:
+    driver: bridge

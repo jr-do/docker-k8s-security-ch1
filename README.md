@@ -51,6 +51,13 @@ Notes:
 - The nginx frontend proxies `/api/*` to `http://ch1-backend:8080` on the Docker network.
 - For local (non-Docker) frontend, edit `frontend/config.js` to point at your backend.
 
+## Run with Docker Compose
+```bash
+docker compose up --build
+```
+
+Open http://localhost:3000 and click "Load data".
+
 ## Test the API with curl
 ```bash
 curl http://localhost:8080/
