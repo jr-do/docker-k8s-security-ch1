@@ -69,6 +69,15 @@ Values:
 - `FRONTEND_PORT` (default `3000`)
 - `API_BASE_URL` (empty uses nginx proxy; set full URL to override)
 
+## Deploy to Kubernetes (Helm)
+```bash
+kubectl create namespace app-ch1
+helm dependency update ./helm
+helm install ch1 ./helm -n app-ch1
+```
+
+See `helm/README.md` for details and overrides.
+
 ## Test the API with curl
 ```bash
 curl http://localhost:8080/
