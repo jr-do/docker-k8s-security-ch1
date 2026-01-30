@@ -2,7 +2,7 @@ apiVersion: v2
 name: ch1
 description: Umbrella chart for backend and frontend
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "1.0.0"
 
 dependencies:
