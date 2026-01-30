@@ -72,8 +72,14 @@ Values:
 ## Deploy to Kubernetes (Helm)
 ```bash
 kubectl create namespace app-ch1
+kubectl -n app-ch1 create secret docker-registry ghcr-pull \
+  --docker-server=ghcr.io \
+  --docker-username=jr-do \
+  --docker-password=<GHCR_TOKEN>
 helm dependency update ./helm
-helm install ch1 ./helm -n app-ch1
+helm install ch1 ./helm -n app-ch1 \
+  --set backend.imagePullSecrets[0]=ghcr-pull \
+  --set frontend.imagePullSecrets[0]=ghcr-pull
 ```
 
 See `helm/README.md` for details and overrides.

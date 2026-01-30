@@ -1,7 +1,8 @@
 image:
   repository: ghcr.io/jr-do/docker-k8s-security-ch1-backend
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
+imagePullSecrets: []
 
 service:
   port: 8080
