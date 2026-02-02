@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ch1
+  namespace: ch1-exercise
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/jr-do/docker-k8s-security-ch1.git
+    targetRevision: main
+    path: helm
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: backend.imagePullSecrets[0]
+          value: ghcr-pull
+        - name: frontend.imagePullSecrets[0]
+          value: ghcr-pull
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: app-ch1
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

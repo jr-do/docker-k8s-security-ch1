@@ -84,6 +84,10 @@ helm install ch1 ./helm -n app-ch1 \
 
 See `helm/README.md` for details and overrides.
 
+## CD with Argo CD (Auto-Sync)
+Argo CD resources and sealed-secrets instructions live under `deploy/`.
+Start here: `deploy/README.md`.
+
 ## Test the API with curl
 ```bash
 curl http://localhost:8080/
