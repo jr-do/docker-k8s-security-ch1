@@ -1,6 +1,6 @@
 # CD Deployment (Argo CD + Sealed Secrets)
 
-This repo uses Argo CD (auto-sync) to deploy the Helm chart in `helm/`.
+This repo uses Argo CD (auto-sync) to deploy the Helm chart from GHCR (OCI).
 
 ## Install Argo CD (namespace: ch1-exercise)
 ```bash
@@ -13,13 +13,15 @@ kubectl apply -n ch1-exercise -f https://raw.githubusercontent.com/argoproj/argo
 kubectl apply -n ch1-exercise -f https://github.com/bitnami-labs/sealed-secrets/releases/latest/download/controller.yaml
 ```
 
-## Add repo credentials to Argo CD
-This repo is private, so Argo CD needs credentials to read it. You can add a repo using the Argo CD CLI:
+## Add registry credentials to Argo CD
+The chart lives in GHCR, so Argo CD needs registry credentials. You can add an OCI registry using the Argo CD CLI:
 ```bash
 argocd login <ARGOCD_SERVER>
-argocd repo add https://github.com/jr-do/docker-k8s-security-ch1.git \
+argocd repo add oci://ghcr.io/jr-do/docker-k8s-security-ch1 \
+  --type helm \
+  --name ch1-oci \
   --username jr-do \
-  --password <GITHUB_PAT>
+  --password <GHCR_TOKEN>
 ```
 
 ## Apply the Argo CD Application

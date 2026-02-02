@@ -6,12 +6,10 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/jr-do/docker-k8s-security-ch1.git
-    targetRevision: main
-    path: helm
+    repoURL: oci://ghcr.io/jr-do/docker-k8s-security-ch1
+    chart: ch1
+    targetRevision: ">=0.1.0"
     helm:
-      valueFiles:
-        - values.yaml
       parameters:
         - name: backend.imagePullSecrets[0]
           value: ghcr-pull
