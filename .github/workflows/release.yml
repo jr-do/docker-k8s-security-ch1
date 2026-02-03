@@ -47,38 +47,9 @@ jobs:
       - name: Update chart version and image tags
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          python - <<'PY'
-          import re
-          from pathlib import Path
-
-          version = "${{ steps.version.outputs.version }}"
-
-          chart_path = Path("helm/Chart.yaml")
-          chart_text = chart_path.read_text()
-          chart_text = re.sub(r"^version:\\s*.*$", f"version: {version}", chart_text, flags=re.M)
-          chart_text = re.sub(r"^appVersion:\\s*.*$", f'appVersion: "{version}"', chart_text, flags=re.M)
-          chart_path.write_text(chart_text)
-
-          values_path = Path("helm/values.yaml")
-          values_text = values_path.read_text().splitlines()
-          out = []
-          stack = []
-          for line in values_text:
-            stripped = line.lstrip()
-            indent = len(line) - len(stripped)
-            if stripped.endswith(":") and not stripped.startswith("#"):
-              key = stripped[:-1].strip()
-              while stack and stack[-1][1] >= indent:
-                stack.pop()
-              stack.append((key, indent))
-            if stripped.startswith("tag:"):
-              path = [k for k, _ in stack]
-              if path and path[-1] == "image":
-                out.append(" " * indent + f"tag: {version}")
-                continue
-            out.append(line)
-          values_path.write_text("\\n".join(out) + "\\n")
-          PY
+          sed -i "s/^version: .*/version: ${VERSION}/" helm/Chart.yaml
+          sed -i "s/^appVersion: .*/appVersion: \"${VERSION}\"/" helm/Chart.yaml
+          sed -i "s/^\([[:space:]]*\)tag: .*/\1tag: ${VERSION}/" helm/values.yaml
 
       - name: Install Helm
         run: |
