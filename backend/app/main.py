@@ -50,6 +50,8 @@ def api_info() -> dict[str, Any]:
                         "country": geo.get("country"),
                         "region": geo.get("region"),
                         "city": geo.get("city"),
+                        "lat": geo.get("latitude"),
+                        "lon": geo.get("longitude"),
                         "asn": geo.get("connection", {}).get("asn"),
                         "org": geo.get("connection", {}).get("org"),
                     }
