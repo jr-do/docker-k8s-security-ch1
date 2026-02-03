@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>API Info Viewer</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
     <style>
       :root {
         color-scheme: light;
@@ -17,12 +23,24 @@
       }
 
       .card {
-        max-width: 720px;
+        max-width: 980px;
         background: #fff9f0;
         border: 1px solid #e4dccf;
         border-radius: 8px;
         padding: 20px;
         box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      @media (max-width: 860px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
       }
 
       button {
@@ -57,6 +75,12 @@
         border-radius: 8px;
         overflow-x: auto;
       }
+
+      #map {
+        height: 360px;
+        border-radius: 8px;
+        border: 1px solid #e4dccf;
+      }
     </style>
   </head>
   <body>
@@ -65,9 +89,20 @@
       <p>Click the button to load JSON from the backend.</p>
       <button id="loadBtn">Load data</button>
       <div id="status">Idle</div>
-      <pre id="output">{}</pre>
+      <div class="layout">
+        <pre id="output">{}</pre>
+        <div>
+          <h2>Geo Map</h2>
+          <div id="map"></div>
+        </div>
+      </div>
     </div>
 
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
     <script src="config.js"></script>
     <script>
       const hasConfig = window.__CONFIG__ &&
@@ -76,6 +111,14 @@
       const loadBtn = document.getElementById("loadBtn");
       const statusEl = document.getElementById("status");
       const outputEl = document.getElementById("output");
+      const mapEl = document.getElementById("map");
+
+      const map = L.map(mapEl).setView([20, 0], 2);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 18,
+        attribution: "&copy; OpenStreetMap contributors",
+      }).addTo(map);
+      let marker = null;
 
       const setStatus = (message, isError = false) => {
         statusEl.textContent = message;
@@ -93,6 +136,18 @@
           }
           const data = await response.json();
           outputEl.textContent = JSON.stringify(data, null, 2);
+          if (data.ip_location && data.ip_location.lat && data.ip_location.lon) {
+            const lat = Number(data.ip_location.lat);
+            const lon = Number(data.ip_location.lon);
+            if (!Number.isNaN(lat) && !Number.isNaN(lon)) {
+              map.setView([lat, lon], 10);
+              if (marker) {
+                marker.setLatLng([lat, lon]);
+              } else {
+                marker = L.marker([lat, lon]).addTo(map);
+              }
+            }
+          }
           setStatus("Loaded successfully");
         } catch (err) {
           outputEl.textContent = "{}";
