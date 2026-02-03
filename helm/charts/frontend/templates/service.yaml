@@ -5,7 +5,7 @@ metadata:
   labels:
 {{ include "frontend.labels" . | indent 4 }}
 spec:
-  type: ClusterIP
+  type: {{ .Values.service.type }}
   selector:
     app.kubernetes.io/name: {{ include "frontend.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
@@ -13,3 +13,6 @@ spec:
     - name: http
       port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.port }}
+      {{- if .Values.service.nodePort }}
+      nodePort: {{ .Values.service.nodePort }}
+      {{- end }}
