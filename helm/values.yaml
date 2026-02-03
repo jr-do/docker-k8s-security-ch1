@@ -17,6 +17,8 @@ frontend:
   imagePullSecrets: []
   service:
     port: 80
+    type: NodePort
+    nodePort: 30080
   env:
     API_BASE_URL: ""
   backendService:

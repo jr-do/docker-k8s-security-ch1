@@ -84,6 +84,8 @@ helm install ch1 ./helm -n app-ch1 \
 
 See `helm/README.md` for details and overrides.
 
+By default, the frontend Service is a NodePort on `30080`.
+
 ## CD with Argo CD (Auto-Sync)
 Argo CD resources and sealed-secrets instructions live under `deploy/`.
 Start here: `deploy/README.md`.

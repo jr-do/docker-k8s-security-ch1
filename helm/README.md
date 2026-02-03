@@ -34,3 +34,5 @@ helm upgrade --install ch1 ./helm -n app-ch1 \
   --set backend.image.tag=latest \
   --set frontend.image.tag=latest
 ```
+
+By default, the frontend Service is a NodePort on `30080`.
