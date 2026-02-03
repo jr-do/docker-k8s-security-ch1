@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import json
+from urllib.request import urlopen
+from urllib.error import URLError, HTTPError
 from typing import Any
 
 from fastapi import FastAPI
@@ -30,10 +33,18 @@ def healthz() -> dict[str, str]:
 @app.get("/api/info")
 def api_info() -> dict[str, Any]:
     timestamp = datetime.now(timezone.utc).isoformat()
+    public_ip = "public IP not available"
+    try:
+        with urlopen("https://api.ipify.org?format=json", timeout=2) as response:
+            data = json.loads(response.read().decode("utf-8"))
+            public_ip = data.get("ip", public_ip)
+    except (URLError, HTTPError, TimeoutError, json.JSONDecodeError):
+        pass
     return {
         "service": "backend",
         "version": "1.0.0",
         "timestamp": timestamp,
         "message": "Hello from the API",
         "items": ["docker", "kubernetes", "security"],
+        "public_ip": public_ip,
     }
