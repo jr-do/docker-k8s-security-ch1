@@ -34,12 +34,27 @@ def healthz() -> dict[str, str]:
 def api_info() -> dict[str, Any]:
     timestamp = datetime.now(timezone.utc).isoformat()
     public_ip = "public IP not available"
+    ip_location: dict[str, Any] | None = None
     try:
         with urlopen("https://api.ipify.org?format=json", timeout=2) as response:
             data = json.loads(response.read().decode("utf-8"))
             public_ip = data.get("ip", public_ip)
     except (URLError, HTTPError, TimeoutError, json.JSONDecodeError):
         pass
+    if public_ip != "public IP not available":
+        try:
+            with urlopen(f"https://ipwho.is/{public_ip}?output=json", timeout=2) as response:
+                geo = json.loads(response.read().decode("utf-8"))
+                if geo.get("success", True) is True:
+                    ip_location = {
+                        "country": geo.get("country"),
+                        "region": geo.get("region"),
+                        "city": geo.get("city"),
+                        "asn": geo.get("connection", {}).get("asn"),
+                        "org": geo.get("connection", {}).get("org"),
+                    }
+        except (URLError, HTTPError, TimeoutError, json.JSONDecodeError):
+            pass
     return {
         "service": "backend",
         "version": "1.0.0",
@@ -47,4 +62,5 @@ def api_info() -> dict[str, Any]:
         "message": "Hello from the API",
         "items": ["docker", "kubernetes", "security"],
         "public_ip": public_ip,
+        "ip_location": ip_location,
     }
