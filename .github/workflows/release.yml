@@ -1,0 +1,95 @@
+name: Release (Build Images + Push Helm Chart)
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build and push backend image
+        run: |
+          IMAGE="ghcr.io/${{ github.repository_owner }}/docker-k8s-security-ch1-backend"
+          VERSION="${{ steps.version.outputs.version }}"
+          docker build -t "${IMAGE}:${VERSION}" -t "${IMAGE}:latest" ./backend
+          docker push "${IMAGE}:${VERSION}"
+          docker push "${IMAGE}:latest"
+
+      - name: Build and push frontend image
+        run: |
+          IMAGE="ghcr.io/${{ github.repository_owner }}/docker-k8s-security-ch1-frontend"
+          VERSION="${{ steps.version.outputs.version }}"
+          docker build -t "${IMAGE}:${VERSION}" -t "${IMAGE}:latest" ./frontend
+          docker push "${IMAGE}:${VERSION}"
+          docker push "${IMAGE}:latest"
+
+      - name: Update chart version and image tags
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          version = "${{ steps.version.outputs.version }}"
+
+          chart_path = Path("helm/Chart.yaml")
+          chart_text = chart_path.read_text()
+          chart_text = re.sub(r"^version:\\s*.*$", f"version: {version}", chart_text, flags=re.M)
+          chart_text = re.sub(r"^appVersion:\\s*.*$", f'appVersion: "{version}"', chart_text, flags=re.M)
+          chart_path.write_text(chart_text)
+
+          values_path = Path("helm/values.yaml")
+          values_text = values_path.read_text().splitlines()
+          out = []
+          stack = []
+          for line in values_text:
+            stripped = line.lstrip()
+            indent = len(line) - len(stripped)
+            if stripped.endswith(":") and not stripped.startswith("#"):
+              key = stripped[:-1].strip()
+              while stack and stack[-1][1] >= indent:
+                stack.pop()
+              stack.append((key, indent))
+            if stripped.startswith("tag:"):
+              path = [k for k, _ in stack]
+              if path and path[-1] == "image":
+                out.append(" " * indent + f"tag: {version}")
+                continue
+            out.append(line)
+          values_path.write_text("\\n".join(out) + "\\n")
+          PY
+
+      - name: Install Helm
+        run: |
+          HELM_VERSION="v3.15.4"
+          curl -sSL -o /tmp/helm.tar.gz "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
+          tar -xzf /tmp/helm.tar.gz -C /tmp
+          sudo mv /tmp/linux-amd64/helm /usr/local/bin/helm
+
+      - name: Package and push chart
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          helm package ./helm --version "${VERSION}" --app-version "${VERSION}"
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+          helm push "ch1-${VERSION}.tgz" oci://ghcr.io/${{ github.repository_owner }}/docker-k8s-security-ch1
