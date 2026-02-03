@@ -17,7 +17,7 @@ kubectl apply -n ch1-exercise -f https://github.com/bitnami-labs/sealed-secrets/
 The chart lives in GHCR, so Argo CD needs registry credentials. You can add an OCI registry using the Argo CD CLI:
 ```bash
 argocd login <ARGOCD_SERVER>
-argocd repo add oci://ghcr.io/jr-do/docker-k8s-security-ch1 \
+argocd repo add oci://ghcr.io/jr-do/docker-k8s-security-ch1/ch1 \
   --type helm \
   --name ch1-oci \
   --username jr-do \
