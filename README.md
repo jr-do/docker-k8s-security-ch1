@@ -90,6 +90,26 @@ By default, the frontend Service is a NodePort on `30080`.
 Argo CD resources and sealed-secrets instructions live under `deploy/`.
 Start here: `deploy/README.md`.
 
+## Security & Release Pipeline
+- **Release workflow** runs on `v*` tags:
+  - Builds and scans images (Trivy, CRITICAL only).
+  - Generates SBOMs (CycloneDX) and uploads SARIF to GitHub Security.
+  - Packages and pushes the Helm chart to GHCR (OCI).
+- **Daily security scan** runs on a schedule:
+  - Scans `latest` images with Trivy (CRITICAL only).
+  - Uploads SARIF + SBOM artifacts.
+
+### Required secrets
+- `GHCR_PAT`: classic PAT with `read:packages`, `write:packages`, and `repo`.
+
+### Release steps
+```bash
+git tag v0.1.x
+git push origin v0.1.x
+```
+
+Argo CD tracks the latest chart version (`>=0.1.0`) from GHCR and auto-syncs to `app-ch1`.
+
 ## Test the API with curl
 ```bash
 curl http://localhost:8080/
