@@ -9,6 +9,7 @@ on:
 permissions:
   contents: read
   packages: write
+  security-events: write
 
 jobs:
   release:
@@ -28,19 +29,78 @@ jobs:
         run: |
           echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Build and push backend image
+      - name: Install Trivy
+        run: |
+          TRIVY_VERSION="0.55.2"
+          curl -sSL -o /tmp/trivy.tar.gz "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          tar -xzf /tmp/trivy.tar.gz -C /tmp
+          sudo mv /tmp/trivy /usr/local/bin/trivy
+
+      - name: Build backend image
         run: |
           IMAGE="ghcr.io/${{ github.repository_owner }}/docker-k8s-security-ch1-backend"
           VERSION="${{ steps.version.outputs.version }}"
           docker build -t "${IMAGE}:${VERSION}" -t "${IMAGE}:latest" ./backend
-          docker push "${IMAGE}:${VERSION}"
-          docker push "${IMAGE}:latest"
 
-      - name: Build and push frontend image
+      - name: Build frontend image
         run: |
           IMAGE="ghcr.io/${{ github.repository_owner }}/docker-k8s-security-ch1-frontend"
           VERSION="${{ steps.version.outputs.version }}"
           docker build -t "${IMAGE}:${VERSION}" -t "${IMAGE}:latest" ./frontend
+
+      - name: Scan images (CRITICAL only)
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          BACKEND_IMAGE="ghcr.io/${{ github.repository_owner }}/docker-k8s-security-ch1-backend:${VERSION}"
+          FRONTEND_IMAGE="ghcr.io/${{ github.repository_owner }}/docker-k8s-security-ch1-frontend:${VERSION}"
+          trivy image --severity CRITICAL --exit-code 1 "${BACKEND_IMAGE}"
+          trivy image --severity CRITICAL --exit-code 1 "${FRONTEND_IMAGE}"
+
+      - name: Generate SBOMs
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          BACKEND_IMAGE="ghcr.io/${{ github.repository_owner }}/docker-k8s-security-ch1-backend:${VERSION}"
+          FRONTEND_IMAGE="ghcr.io/${{ github.repository_owner }}/docker-k8s-security-ch1-frontend:${VERSION}"
+          trivy image --format cyclonedx --output backend-sbom.cdx.json "${BACKEND_IMAGE}"
+          trivy image --format cyclonedx --output frontend-sbom.cdx.json "${FRONTEND_IMAGE}"
+
+      - name: Generate SARIF reports
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          BACKEND_IMAGE="ghcr.io/${{ github.repository_owner }}/docker-k8s-security-ch1-backend:${VERSION}"
+          FRONTEND_IMAGE="ghcr.io/${{ github.repository_owner }}/docker-k8s-security-ch1-frontend:${VERSION}"
+          trivy image --format sarif --output backend.sarif "${BACKEND_IMAGE}"
+          trivy image --format sarif --output frontend.sarif "${FRONTEND_IMAGE}"
+
+      - name: Upload SARIF (backend)
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: backend.sarif
+
+      - name: Upload SARIF (frontend)
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: frontend.sarif
+
+      - name: Upload SBOMs
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: |
+            backend-sbom.cdx.json
+            frontend-sbom.cdx.json
+
+      - name: Push backend image
+        run: |
+          IMAGE="ghcr.io/${{ github.repository_owner }}/docker-k8s-security-ch1-backend"
+          VERSION="${{ steps.version.outputs.version }}"
+          docker push "${IMAGE}:${VERSION}"
+          docker push "${IMAGE}:latest"
+
+      - name: Push frontend image
+        run: |
+          IMAGE="ghcr.io/${{ github.repository_owner }}/docker-k8s-security-ch1-frontend"
+          VERSION="${{ steps.version.outputs.version }}"
           docker push "${IMAGE}:${VERSION}"
           docker push "${IMAGE}:latest"
 

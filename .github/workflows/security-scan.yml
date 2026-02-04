@@ -1,0 +1,65 @@
+name: Security Scan (Daily)
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Install Trivy
+        run: |
+          TRIVY_VERSION="0.55.2"
+          curl -sSL -o /tmp/trivy.tar.gz "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          tar -xzf /tmp/trivy.tar.gz -C /tmp
+          sudo mv /tmp/trivy /usr/local/bin/trivy
+
+      - name: Scan images (CRITICAL only)
+        run: |
+          set +e
+          STATUS=0
+          BACKEND_IMAGE="ghcr.io/${{ github.repository_owner }}/docker-k8s-security-ch1-backend:latest"
+          FRONTEND_IMAGE="ghcr.io/${{ github.repository_owner }}/docker-k8s-security-ch1-frontend:latest"
+
+          trivy image --format sarif --output backend.sarif "${BACKEND_IMAGE}"
+          trivy image --severity CRITICAL --exit-code 1 "${BACKEND_IMAGE}"
+          if [ $? -ne 0 ]; then STATUS=1; fi
+          trivy image --format cyclonedx --output backend-sbom.cdx.json "${BACKEND_IMAGE}"
+
+          trivy image --format sarif --output frontend.sarif "${FRONTEND_IMAGE}"
+          trivy image --severity CRITICAL --exit-code 1 "${FRONTEND_IMAGE}"
+          if [ $? -ne 0 ]; then STATUS=1; fi
+          trivy image --format cyclonedx --output frontend-sbom.cdx.json "${FRONTEND_IMAGE}"
+
+          exit $STATUS
+
+      - name: Upload SARIF (backend)
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: backend.sarif
+
+      - name: Upload SARIF (frontend)
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: frontend.sarif
+
+      - name: Upload SBOMs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: |
+            backend-sbom.cdx.json
+            frontend-sbom.cdx.json
