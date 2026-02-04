@@ -5,6 +5,8 @@ COPY config.template.js /usr/share/nginx/html/config.template.js
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY 99-env-config.sh /docker-entrypoint.d/99-env-config.sh
 
+RUN apk upgrade --no-cache
+
 RUN chmod +x /docker-entrypoint.d/99-env-config.sh
 
 EXPOSE 80

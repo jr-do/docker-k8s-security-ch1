@@ -9,6 +9,7 @@ on:
 permissions:
   contents: read
   packages: write
+  actions: read
   security-events: write
 
 jobs:
